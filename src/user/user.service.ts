@@ -22,11 +22,18 @@ export class UsersService {
 
   // ✅ SIGNUP
   async signup(signupDto: SignupDto): Promise<User> {
-    const { email, password, fullName } = signupDto;
+    const { email, password, fullName, username } = signupDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
       throw new BadRequestException('Email already exists');
+    }
+
+    if (
+      username &&
+      (await this.userModel.exists({ username: username.toLowerCase() }))
+    ) {
+      throw new BadRequestException('Username already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -34,6 +41,7 @@ export class UsersService {
     const user = await this.userModel.create({
       email,
       fullName,
+      username: username?.toLowerCase(),
       password: hashedPassword,
       onboardingStep: 1,
       onboardingCompleted: false,
@@ -48,6 +56,20 @@ export class UsersService {
 
   async findById(id: string): Promise<User | null> {
     return this.userModel.findById(id).exec();
+  }
+
+  async getProfile(id: string) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+    const user = await this.userModel
+      .findById(id)
+      .select(
+        'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+      )
+      .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   async updateResearchStep(userId: string, dto: ResearchStepDto) {
@@ -102,9 +124,6 @@ export class UsersService {
   }
 
   async clearRefreshToken(userId: string): Promise<void> {
-    await this.userModel.updateOne(
-      { _id: userId },
-      { refreshTokenHash: null },
-    );
+    await this.userModel.updateOne({ _id: userId }, { refreshTokenHash: null });
   }
 }

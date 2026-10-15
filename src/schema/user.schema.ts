@@ -4,7 +4,7 @@ import { Document } from 'mongoose';
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
-  fullName: string;
+  fullName!: string;
 
   @Prop()
   institution?: string;
@@ -16,22 +16,25 @@ export class User extends Document {
   bio?: string;
 
   @Prop({ required: true, unique: true })
-  email: string;
+  email!: string;
+
+  @Prop({ unique: true, sparse: true, lowercase: true, trim: true })
+  username?: string;
 
   @Prop({ required: true })
-  password: string;
+  password!: string;
 
   @Prop()
   refreshTokenHash?: string;
 
   @Prop({ default: false })
-  onboardingCompleted: boolean;
+  onboardingCompleted!: boolean;
 
   @Prop({ default: 1 })
-  onboardingStep: number;
+  onboardingStep!: number;
 
   @Prop({ type: [String], default: [] })
-  areaOfInterest: string[];
+  areaOfInterest!: string[];
 
   @Prop()
   briefResearchFocus?: string;

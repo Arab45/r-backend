@@ -1,0 +1,21 @@
+# Never bake secrets into the image
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Not needed at runtime
+.git
+.github
+.vscode
+deploy
+node_modules
+npm-debug.log*
+Dockerfile
+.dockerignore
+docker.compose.yml
+docker-compose*.yml
+compose*.yml
+README*

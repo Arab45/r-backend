@@ -25,6 +25,31 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Research social API
+
+Social routes require the access token in an `Authorization: Bearer <token>` header (or the configured `accessToken` cookie). Posts use a short-form format with a 280-character body and optional attachment URLs. Post lists and comments are paginated with `page` and `limit` query parameters.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| `POST` | `/posts` | Create a research post (`content`, optional `attachments`) |
+| `GET` | `/posts` | Browse posts; optional `authorId`, `page`, and `limit` |
+| `GET` | `/posts/:postId` | Get a post with `likeCount` and `commentCount` |
+| `PATCH` | `/posts/:postId` | Edit your own post |
+| `DELETE` | `/posts/:postId` | Delete your own post and its comments |
+| `POST` / `DELETE` | `/posts/:postId/likes` | Like or unlike a post |
+| `GET` / `POST` | `/posts/:postId/comments` | List or create comments |
+| `DELETE` | `/posts/comments/:commentId` | Delete your own comment |
+| `GET` | `/users/:userId/posts` | Browse a user's posts |
+| `POST` / `DELETE` | `/users/:userId/follow` | Follow or unfollow a user |
+| `GET` | `/users/:userId/followers` | List a user's followers |
+| `GET` | `/users/:userId/following` | List accounts a user follows |
+| `GET` | `/search?q=term` | Search post text, full names, and usernames |
+| `GET` | `/chat/conversations` | List recent direct-message conversations |
+| `GET` / `POST` | `/chat/:userId/messages` | Read or send direct messages |
+| `GET` | `/users/:userId` | Fetch public profile fields |
+
+Signup accepts an optional unique `username` (3-30 letters, numbers, or underscores). Existing accounts can continue signing up without one.
+
 ## Project setup
 
 ```bash

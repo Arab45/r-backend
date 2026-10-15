@@ -1,13 +1,17 @@
-import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
-import { AcademicStepDto, ResearchStepDto, SignupDto } from "./dto/create.user.dto";
+import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import {
+  AcademicStepDto,
+  ResearchStepDto,
+  SignupDto,
+} from './dto/create.user.dto';
 import {
   ApiBody,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
-} from "@nestjs/swagger";
-import { UsersService } from "./user.service";
+} from '@nestjs/swagger';
+import { UsersService } from './user.service';
 
 @ApiTags('users', 'onboarding')
 @Controller('users')
@@ -47,7 +51,10 @@ export class UsersController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Validation error or duplicate email' })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation error or duplicate email',
+  })
   async signup(@Body() dto: SignupDto) {
     const user = await this.usersService.signup(dto);
 
@@ -101,7 +108,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateResearch(
-    @Param('userId') userId: string, 
+    @Param('userId') userId: string,
     @Body() dto: ResearchStepDto,
   ) {
     const user = await this.usersService.updateResearchStep(userId, dto);
@@ -156,7 +163,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateAcademic(
-    @Param('userId') userId: string, 
+    @Param('userId') userId: string,
     @Body() dto: AcademicStepDto,
   ) {
     const user = await this.usersService.updateAcademicStep(userId, dto);
@@ -174,7 +181,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Get user by ID',
     description:
-      'Returns full user document including `onboardingStep`, `onboardingCompleted`, and profile fields. No authentication required unless you add a guard later.',
+      'Returns public profile fields without credentials or token data.',
   })
   @ApiParam({
     name: 'userId',
@@ -198,7 +205,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async getUserById(@Param('userId') userId: string) {
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.getProfile(userId);
 
     return {
       success: true,

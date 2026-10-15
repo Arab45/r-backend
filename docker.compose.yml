@@ -1,0 +1,20 @@
+services:
+  api:
+    build:
+      context: .
+      # Hot-reloading dev image. For a production run, build the "production"
+      # target instead: `docker build --target production -t nplug-backend .`
+      target: dev
+    # Inject every key from .env (MONGO_URL, JWT secrets, Minio, etc.)
+    # so secrets stay out of this file and nothing drifts out of sync.
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./server.js:/usr/src/app/server.js

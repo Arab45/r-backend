@@ -1,23 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class SignupDto {
   @ApiProperty({ example: 'Tommy Adebakin', description: 'User full name' })
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  fullName!: string;
+
+  @ApiProperty({ required: false, example: 'tommy_adebayo' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-zA-Z0-9_]{3,30}$/)
+  username?: string;
 
   @ApiProperty({
     example: 'tommy.adebakin@example.com',
     description: 'User email',
   })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '********', description: 'User password' })
   @IsString()
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 export class ResearchStepDto {
@@ -29,7 +43,7 @@ export class ResearchStepDto {
   @IsArray()
   @IsString({ each: true })
   @IsNotEmpty()
-  areaOfInterest: string[];
+  areaOfInterest!: string[];
 
   @ApiProperty({
     example: 'AI in decentralized finance',
@@ -37,19 +51,25 @@ export class ResearchStepDto {
   })
   @IsString()
   @IsNotEmpty()
-  briefResearchFocus: string;
+  briefResearchFocus!: string;
 }
 
 export class AcademicStepDto {
-  @ApiProperty({ example: 'Computer Science', description: 'Primary field of study' })
+  @ApiProperty({
+    example: 'Computer Science',
+    description: 'Primary field of study',
+  })
   @IsString()
   @IsNotEmpty()
-  fieldOfStudy: string;
+  fieldOfStudy!: string;
 
-  @ApiProperty({ example: 'University of Ibadan', description: 'Institution name' })
+  @ApiProperty({
+    example: 'University of Ibadan',
+    description: 'Institution name',
+  })
   @IsString()
   @IsNotEmpty()
-  institution: string;
+  institution!: string;
 
   @ApiProperty({
     example: 'AI enthusiast and backend developer',
@@ -57,5 +77,5 @@ export class AcademicStepDto {
   })
   @IsString()
   @IsNotEmpty()
-  bio: string;
+  bio!: string;
 }
