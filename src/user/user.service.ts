@@ -126,4 +126,50 @@ export class UsersService {
   async clearRefreshToken(userId: string): Promise<void> {
     await this.userModel.updateOne({ _id: userId }, { refreshTokenHash: null });
   }
+
+  async setPasswordResetToken(
+    userId: string | Types.ObjectId,
+    tokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: userId },
+        {
+          passwordResetTokenHash: tokenHash,
+          passwordResetExpiresAt: expiresAt,
+        },
+      )
+      .exec();
+  }
+
+  async clearPasswordResetToken(
+    userId: string | Types.ObjectId,
+  ): Promise<void> {
+    await this.userModel
+      .updateOne(
+        { _id: userId },
+        { $unset: { passwordResetTokenHash: 1, passwordResetExpiresAt: 1 } },
+      )
+      .exec();
+  }
+
+  async resetPasswordWithToken(
+    tokenHash: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    const result = await this.userModel
+      .updateOne(
+        {
+          passwordResetTokenHash: tokenHash,
+          passwordResetExpiresAt: { $gt: new Date() },
+        },
+        {
+          $set: { password: passwordHash, refreshTokenHash: null },
+          $unset: { passwordResetTokenHash: 1, passwordResetExpiresAt: 1 },
+        },
+      )
+      .exec();
+    return result.modifiedCount === 1;
+  }
 }

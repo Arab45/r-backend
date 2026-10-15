@@ -27,6 +27,12 @@ export class User extends Document {
   @Prop()
   refreshTokenHash?: string;
 
+  @Prop({ select: false, index: true })
+  passwordResetTokenHash?: string;
+
+  @Prop({ select: false })
+  passwordResetExpiresAt?: Date;
+
   @Prop({ default: false })
   onboardingCompleted!: boolean;
 

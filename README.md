@@ -82,6 +82,10 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Password reset email
+
+Configure `RESEND_API_KEY`, `AUTH_EMAIL_FROM`, and `FRONTEND_URL` to enable password reset emails. The frontend reset page should read the `token` query parameter from `/reset-password` and submit it with `newPassword` to `POST /auth/reset-password`. Reset tokens expire after 30 minutes and are single-use.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
