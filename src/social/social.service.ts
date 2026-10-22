@@ -23,7 +23,7 @@ export class SocialService {
     @InjectModel(Follow.name) private readonly followModel: Model<Follow>,
     @InjectModel(Message.name) private readonly messageModel: Model<Message>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
-  ) {}
+  ) {};
 
   async createPost(userId: string, dto: CreatePostDto) {
     this.assertObjectId(userId);
