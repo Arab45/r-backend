@@ -20,7 +20,7 @@ export class UsersService {
     private readonly userModel: Model<User>,
   ) {}
 
-  // ✅ SIGNUP
+  //SIGNUP
   async signup(signupDto: SignupDto): Promise<User> {
     const { email, password, fullName, username } = signupDto;
 
@@ -39,7 +39,7 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await this.userModel.create({
-      email,
+      email: email.toLocaleLowerCase(),
       fullName,
       username: username?.toLowerCase(),
       password: hashedPassword,
