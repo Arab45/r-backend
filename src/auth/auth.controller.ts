@@ -23,7 +23,7 @@ export class AuthController {
     return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 
-  @Post('login')
+  @Post('/login')
   async login(
     @Body() dto: LoginDto,
     @Client() client: string,
