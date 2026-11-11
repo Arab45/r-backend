@@ -3,7 +3,6 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -26,23 +25,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const config = new DocumentBuilder()
-    .setTitle('Backend Research API')
-    .setDescription(
-      'API for user authentication and management. Supports both mobile (Bearer tokens) and web (cookie-based) clients.',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Authentication endpoints (login, refresh)')
-    .addTag('users', 'User signup and profile')
-    .addTag(
-      'onboarding',
-      'Multi-step onboarding: signup → research interests → academic profile',
-    )
-    .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
 
   app.use(cookieParser());
 
