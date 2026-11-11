@@ -18,12 +18,12 @@ export class AuthController {
     
   ) {}
 
-  @Post('forgot-password')
+  @Post('/forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto.email);
   }
 
-  @Post('reset-password')
+  @Post('/reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.newPassword);
   }
@@ -58,7 +58,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return res.json({ message: 'Logged in' });
+    return res.json({ message: 'Logged in', tokens});
   }
 
   @Post('refresh')

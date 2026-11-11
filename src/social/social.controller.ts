@@ -22,19 +22,17 @@ interface AuthenticatedRequest extends Request {
   user: { userId: string };
 }
 
-@ApiTags('posts')
-@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('posts')
 export class SocialController {
   constructor(private readonly socialService: SocialService) {}
 
-  @Post()
+  @Post('/blog')
   createPost(@Req() req: AuthenticatedRequest, @Body() dto: CreatePostDto) {
     return this.socialService.createPost(req.user.userId, dto);
   }
 
-  @Get()
+  @Get('/')
   listPosts(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -43,12 +41,12 @@ export class SocialController {
     return this.socialService.listPosts(Number(page), Number(limit), authorId);
   }
 
-  @Get(':postId')
+  @Get('/blog/:postId')
   getPost(@Param('postId') postId: string) {
     return this.socialService.getPost(postId);
   }
 
-  @Patch(':postId')
+  @Patch('/blog/:postId')
   updatePost(
     @Req() req: AuthenticatedRequest,
     @Param('postId') postId: string,
@@ -57,7 +55,7 @@ export class SocialController {
     return this.socialService.updatePost(req.user.userId, postId, dto);
   }
 
-  @Delete(':postId')
+  @Delete('/blog/:postId')
   deletePost(
     @Req() req: AuthenticatedRequest,
     @Param('postId') postId: string,
@@ -65,12 +63,12 @@ export class SocialController {
     return this.socialService.deletePost(req.user.userId, postId);
   }
 
-  @Post(':postId/likes')
+  @Post('/blog/:postId/likes')
   likePost(@Req() req: AuthenticatedRequest, @Param('postId') postId: string) {
     return this.socialService.setLike(req.user.userId, postId, true);
   }
 
-  @Delete(':postId/likes')
+  @Delete('/blog/:postId/likes')
   unlikePost(
     @Req() req: AuthenticatedRequest,
     @Param('postId') postId: string,
@@ -78,7 +76,7 @@ export class SocialController {
     return this.socialService.setLike(req.user.userId, postId, false);
   }
 
-  @Get(':postId/comments')
+  @Get('/blog/:postId/comments')
   listComments(
     @Param('postId') postId: string,
     @Query('page') page?: string,
@@ -87,7 +85,7 @@ export class SocialController {
     return this.socialService.listComments(postId, Number(page), Number(limit));
   }
 
-  @Post(':postId/comments')
+  @Post('/blog/:postId/comments')
   createComment(
     @Req() req: AuthenticatedRequest,
     @Param('postId') postId: string,
@@ -96,7 +94,7 @@ export class SocialController {
     return this.socialService.createComment(req.user.userId, postId, dto);
   }
 
-  @Delete('comments/:commentId')
+  @Delete('/blog/comments/:commentId')
   deleteComment(
     @Req() req: AuthenticatedRequest,
     @Param('commentId') commentId: string,

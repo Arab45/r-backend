@@ -1,18 +1,21 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthEmailService {
-  isConfigured() {
+  constructor(private readonly configService: ConfigService) {}
+
+  isConfigured(): boolean {
     return Boolean(
-      process.env.RESEND_API_KEY &&
-      process.env.AUTH_EMAIL_FROM &&
-      process.env.FRONTEND_URL,
+      this.configService.get<string>('RESEND_API_KEY') &&
+        this.configService.get<string>('AUTH_EMAIL_FROM') &&
+        this.configService.get<string>('FRONTEND_URL'),
     );
   }
 
   async sendPasswordResetLink(email: string, resetUrl: string) {
-    const apiKey = process.env.RESEND_API_KEY;
-    const from = process.env.AUTH_EMAIL_FROM;
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    const from = this.configService.get<string>('AUTH_EMAIL_FROM');
     if (!apiKey || !from) {
       throw new ServiceUnavailableException(
         'Password reset email is not configured',

@@ -5,6 +5,7 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { UsersService } from 'src/user/user.service';
@@ -19,6 +20,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly authEmailService: AuthEmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async login(email: string, password: string) {
@@ -42,6 +44,8 @@ export class AuthService {
     await this.usersService.updateRefreshToken(user._id, refreshTokenHash);
 
     return {
+      userId: user._id,
+      username: user.fullName,
       accessToken,
       refreshToken,
     };
@@ -84,16 +88,16 @@ export class AuthService {
   }
 
   async forgotPassword(email: string) {
-    const frontendUrl = process.env.FRONTEND_URL;
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
     if (!this.authEmailService.isConfigured() || !frontendUrl) {
       throw new ServiceUnavailableException(
         'Password reset email is not configured',
       );
-    }
+    };
 
     const user = await this.usersService.findByEmail(email);
     if (!user)
-      return { message: 'If the account exists, a reset link will be sent.' };
+      return { message: 'Email not found' };
 
     const token = randomBytes(32).toString('hex');
     const tokenHash = this.hashResetToken(token);
@@ -111,9 +115,9 @@ export class AuthService {
       this.logger.error(
         `Password reset email delivery failed: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
-    }
+    };
 
-    return { message: 'If the account exists, a reset link will be sent.' };
+    return { message: 'A reset link has been sent to your email' };
   }
 
   async resetPassword(token: string, newPassword: string) {
