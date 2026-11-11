@@ -5,11 +5,11 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { UsersService } from 'src/user/user.service';
 import { AuthEmailService } from './email.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -30,7 +30,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(
       { sub: user._id },
-      { expiresIn: '15m' },
+      { expiresIn: '1h' },
     );
 
     const refreshToken = this.jwtService.sign(

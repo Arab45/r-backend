@@ -40,7 +40,7 @@ const userRoom = (userId: string) => `user:${userId}`;
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
-  private server: Server;
+  private server!: Server;
 
   private readonly connectionsByUser = new Map<string, Set<string>>();
 

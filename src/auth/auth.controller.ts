@@ -8,10 +8,15 @@ import {
   ResetPasswordDto,
 } from './dto/create.auth.dto';
 import { Client } from 'src/common/decorator/client.decorator';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
+    
+  ) {}
 
   @Post('forgot-password')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -78,5 +83,23 @@ export class AuthController {
     });
 
     return res.json(tokens);
+  }
+
+  @Post('logout')
+  async logout(@Req() req: Request, @Res() res: Response) {
+    const token =
+      req.cookies?.refreshToken || req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+      return res.status(400).json({ message: 'No refresh token provided' });
+    }
+
+    const payload = this.jwtService.verify(token);
+    await this.authService.logout(payload.sub);
+
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
+    return res.json({ message: 'Logged out' });
   }
 }
