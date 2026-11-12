@@ -19,7 +19,7 @@ async function bootstrap() {
 
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:5174'];
+    : ['http://localhost:5174', 'https://edu-hub-aawk-one.vercel.app'];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
