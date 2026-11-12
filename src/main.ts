@@ -19,7 +19,7 @@ async function bootstrap() {
 
   const corsOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
-    : ['http://localhost:5173', 'https://researcher-hub.onrender.com'];
+    : ['http://localhost:5173/', 'https://researcher-hub.onrender.com'];
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
