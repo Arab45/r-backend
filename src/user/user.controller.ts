@@ -57,7 +57,7 @@ export class UsersController {
     };
   }
 
-  @Get(':userId')
+  @Get('/:userId')
   async getUserById(@Param('userId') userId: string) {
     const user = await this.usersService.getProfile(userId);
 
@@ -68,7 +68,7 @@ export class UsersController {
     };
   }
 
-  @Get('profile/:userId')
+  @Get('/profile/:userId')
   async fetchProfile(@Param('userId') userId: string) {
     const profile = await this.usersService.fetchProfile(userId);
 
