@@ -6,12 +6,13 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User } from 'src/schema/user.schema';
+import { User } from '../schema/user.schema';
 import {
   SignupDto,
   ResearchStepDto,
   AcademicStepDto,
 } from './dto/create.user.dto';
+import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class UsersService {
@@ -171,5 +172,25 @@ export class UsersService {
       )
       .exec();
     return result.modifiedCount === 1;
+  }
+
+  async fetchProfile(userId: string) {
+    try{
+    const userData = await this.userModel.findById(userId);
+    if(!userData){
+      throw new NotFoundException('user data not found')
+    }
+
+    return {
+      id: userData._id,
+      name: userData.fullName,
+      institution: userData.institution,
+      bio: userData.bio,
+      areaOfInterest: userData.areaOfInterest
+    };
+    }
+    catch{
+      throw new BadRequestException('something went wrong');
+    }
   }
 }

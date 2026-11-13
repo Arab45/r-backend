@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from 'src/auth/auth.module';
-import { Comment, CommentSchema } from 'src/schema/comment.schema';
-import { Follow, FollowSchema } from 'src/schema/follow.schema';
-import { Message, MessageSchema } from 'src/schema/message.schema';
-import { Post, PostSchema } from 'src/schema/post.schema';
-import { User, UserSchema } from 'src/schema/user.schema';
+import { AuthModule } from '../auth/auth.module';
+import { Comment, CommentSchema } from '../schema/comment.schema';
+import { Follow, FollowSchema } from '../schema/follow.schema';
+import { Message, MessageSchema } from '../schema/message.schema';
+import { Post, PostSchema } from '../schema/post.schema';
+import { User, UserSchema } from '../schema/user.schema';
 import {
   SocialController,
   SocialRelationsController,

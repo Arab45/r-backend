@@ -6,6 +6,7 @@ import {
 } from './dto/create.user.dto';
 import { UsersService } from './user.service';
 
+
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -64,6 +65,17 @@ export class UsersController {
       success: true,
       message: 'User retrieved successfully',
       user,
+    };
+  }
+
+  @Get('profile/:userId')
+  async fetchProfile(@Param('userId') userId: string) {
+    const profile = await this.usersService.fetchProfile(userId);
+
+    return {
+      success: true,
+      message: 'Profile retrieved successfully',
+      profile,
     };
   }
 }

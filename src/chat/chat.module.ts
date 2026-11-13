@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Message, MessageSchema } from 'src/schema/message.schema';
-import { User, UserSchema } from 'src/schema/user.schema';
-import { AuthModule } from 'src/auth/auth.module';
+import { Message, MessageSchema } from '../schema/message.schema';
+import { User, UserSchema } from '../schema/user.schema';
+import { AuthModule } from '../auth/auth.module';
 import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 

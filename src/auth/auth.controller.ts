@@ -7,7 +7,7 @@ import {
   LoginDto,
   ResetPasswordDto,
 } from './dto/create.auth.dto';
-import { Client } from 'src/common/decorator/client.decorator';
+import { Client } from '../common/decorator/client.decorator';
 import { JwtService } from '@nestjs/jwt';
 
 @Controller('auth')

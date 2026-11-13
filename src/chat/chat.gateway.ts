@@ -11,7 +11,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Server, Socket } from 'socket.io';
-import { User } from 'src/schema/user.schema';
+import { User } from '../schema/user.schema';
 import { ChatService } from './chat.service';
 
 interface ChatSocket extends Socket {

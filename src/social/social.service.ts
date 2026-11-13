@@ -6,11 +6,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Comment } from 'src/schema/comment.schema';
-import { Follow } from 'src/schema/follow.schema';
-import { Message } from 'src/schema/message.schema';
-import { Post } from 'src/schema/post.schema';
-import { User } from 'src/schema/user.schema';
+import { Comment } from '../schema/comment.schema';
+import { Follow } from '../schema/follow.schema';
+import { Message } from '../schema/message.schema';
+import { Post } from '../schema/post.schema';
+import { User } from '../schema/user.schema';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreatePostDto, UpdatePostDto } from './dto/create-post.dto';

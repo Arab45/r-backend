@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
-import { UsersService } from 'src/user/user.service';
+import { UsersService } from '../user/user.service';
 import { AuthEmailService } from './email.service';
 import { JwtService } from '@nestjs/jwt';
 
