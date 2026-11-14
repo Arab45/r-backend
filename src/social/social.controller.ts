@@ -103,10 +103,8 @@ export class SocialController {
   }
 }
 
-@ApiTags('social')
-@ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller()
+@Controller('social')
 export class SocialRelationsController {
   constructor(private readonly socialService: SocialService) {}
 
