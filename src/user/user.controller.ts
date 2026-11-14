@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import {
   AcademicStepDto,
   ResearchStepDto,
   SignupDto,
 } from './dto/create.user.dto';
 import { UsersService } from './user.service';
-
 
 @Controller('users')
 export class UsersController {
@@ -23,6 +22,14 @@ export class UsersController {
         onboardingStep: user.onboardingStep,
       },
     };
+  }
+
+  @Get('/fetch-all')
+  async getAllUsers(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.usersService.fetchAllUsers(Number(page), Number(limit));
   }
 
   @Put('onboarding/research/:userId')

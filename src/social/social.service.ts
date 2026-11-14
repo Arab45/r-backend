@@ -11,6 +11,7 @@ import { Follow } from '../schema/follow.schema';
 import { Message } from '../schema/message.schema';
 import { Post } from '../schema/post.schema';
 import { User } from '../schema/user.schema';
+import { ChatService } from '../chat/chat.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { CreatePostDto, UpdatePostDto } from './dto/create-post.dto';
@@ -23,7 +24,8 @@ export class SocialService {
     @InjectModel(Follow.name) private readonly followModel: Model<Follow>,
     @InjectModel(Message.name) private readonly messageModel: Model<Message>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
-  ) {};
+    private readonly chatService: ChatService,
+  ) {}
 
   async createPost(userId: string, dto: CreatePostDto) {
     this.assertObjectId(userId);
@@ -138,22 +140,11 @@ export class SocialService {
     recipientId: string,
     dto: CreateMessageDto,
   ) {
-    this.assertObjectId(senderId);
-    this.assertObjectId(recipientId);
-    if (senderId === recipientId) {
-      throw new BadRequestException('You cannot message yourself');
-    }
-    const recipient = await this.userModel.exists({ _id: recipientId });
-    if (!recipient) throw new NotFoundException('User not found');
-    return this.messageModel
-      .create({
-        sender: senderId,
-        recipient: recipientId,
-        content: dto.content,
-      })
-      .then((message) =>
-        message.populate('sender recipient', 'fullName username'),
-      );
+    return this.chatService.sendMessageToUser(
+      senderId,
+      recipientId,
+      dto.content,
+    );
   }
 
   async listMessages(

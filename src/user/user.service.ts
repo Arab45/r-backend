@@ -12,7 +12,6 @@ import {
   ResearchStepDto,
   AcademicStepDto,
 } from './dto/create.user.dto';
-import { ExceptionsHandler } from '@nestjs/core/exceptions/exceptions-handler';
 
 @Injectable()
 export class UsersService {
@@ -175,22 +174,49 @@ export class UsersService {
   }
 
   async fetchProfile(userId: string) {
-    try{
-    const userData = await this.userModel.findById(userId);
-    if(!userData){
-      throw new NotFoundException('user data not found')
-    }
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new BadRequestException('Invalid user ID');
+      }
+      const userData = await this.userModel.findById(userId);
+      if (!userData) {
+        throw new NotFoundException('user data not found');
+      }
 
-    return {
-      id: userData._id,
-      name: userData.fullName,
-      institution: userData.institution,
-      bio: userData.bio,
-      areaOfInterest: userData.areaOfInterest
-    };
-    }
-    catch{
+      return {
+        id: userData._id,
+        name: userData.fullName,
+        institution: userData.institution,
+        bio: userData.bio,
+        areaOfInterest: userData.areaOfInterest,
+      };
+    } catch {
       throw new BadRequestException('something went wrong');
     }
+  }
+
+  async fetchAllUsers(page = 1, limit = 10) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 10));
+    const [users, total] = await Promise.all([
+      this.userModel
+        .find()
+        .select(
+          'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+        )
+        .sort({ createdAt: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .exec(),
+      this.userModel.countDocuments().exec(),
+    ]);
+
+    return {
+      users,
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+    };
   }
 }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ChatModule } from '../chat/chat.module';
 import { AuthModule } from '../auth/auth.module';
 import { Comment, CommentSchema } from '../schema/comment.schema';
 import { Follow, FollowSchema } from '../schema/follow.schema';
@@ -15,6 +16,7 @@ import { SocialService } from './social.service';
 @Module({
   imports: [
     AuthModule,
+    ChatModule,
     MongooseModule.forFeature([
       { name: Post.name, schema: PostSchema },
       { name: Comment.name, schema: CommentSchema },
