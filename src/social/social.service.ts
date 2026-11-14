@@ -11,9 +11,12 @@ import { Follow } from '../schema/follow.schema';
 import { Message } from '../schema/message.schema';
 import { Post } from '../schema/post.schema';
 import { User } from '../schema/user.schema';
+import {
+  ChatAttachmentService,
+  ChatUploadedFile,
+} from '../chat/chat-attachment.service';
 import { ChatService } from '../chat/chat.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { CreateMessageDto } from './dto/create-message.dto';
 import { CreatePostDto, UpdatePostDto } from './dto/create-post.dto';
 
 @Injectable()
@@ -25,11 +28,32 @@ export class SocialService {
     @InjectModel(Message.name) private readonly messageModel: Model<Message>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly chatService: ChatService,
+    private readonly attachmentService: ChatAttachmentService,
   ) {}
 
-  async createPost(userId: string, dto: CreatePostDto) {
+  async createPost(
+    userId: string,
+    dto: CreatePostDto,
+    files: ChatUploadedFile[] = [],
+  ) {
     this.assertObjectId(userId);
-    return this.postModel.create({ ...dto, author: userId });
+    const uploaded = await this.attachmentService.uploadFiles(
+      files,
+      'post-attachments',
+    );
+    try {
+      return await this.postModel.create({
+        ...dto,
+        attachments: [
+          ...(dto.attachments ?? []),
+          ...uploaded.map((attachment) => attachment.url),
+        ],
+        author: userId,
+      });
+    } catch (error) {
+      await this.attachmentService.deleteFiles(uploaded);
+      throw error;
+    }
   }
 
   async listPosts(page = 1, limit = 20, authorId?: string) {
@@ -135,69 +159,88 @@ export class SocialService {
     return relations.map((relation) => relation.get(relationField));
   }
 
-  async sendMessage(
-    senderId: string,
-    recipientId: string,
-    dto: CreateMessageDto,
-  ) {
-    return this.chatService.sendMessageToUser(
-      senderId,
-      recipientId,
-      dto.content,
-    );
-  }
-
-  async listMessages(
-    userId: string,
-    otherUserId: string,
-    page = 1,
-    limit = 50,
-  ) {
-    this.assertObjectId(userId);
-    this.assertObjectId(otherUserId);
+  async fetchAllFollowRelations(page = 1, limit = 20) {
     const safePage = Math.max(1, Number(page) || 1);
-    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
-    const filter = {
-      $or: [
-        { sender: userId, recipient: otherUserId },
-        { sender: otherUserId, recipient: userId },
-      ],
-    };
-    const [messages, total] = await Promise.all([
-      this.messageModel
-        .find(filter)
+    const safeLimit = Math.min(50, Math.max(1, Number(limit) || 20));
+    const [relations, total] = await Promise.all([
+      this.followModel
+        .find()
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('sender recipient', 'fullName username')
+        .populate(
+          'follower following',
+          'fullName username institution fieldOfStudy bio',
+        )
         .exec(),
-      this.messageModel.countDocuments(filter).exec(),
+      this.followModel.countDocuments().exec(),
     ]);
-    return {
-      messages: messages.reverse(),
-      total,
-      page: safePage,
-      limit: safeLimit,
-    };
+    return { relations, total, page: safePage, limit: safeLimit };
   }
 
-  async listConversations(userId: string) {
-    this.assertObjectId(userId);
-    const messages = await this.messageModel
-      .find({ $or: [{ sender: userId }, { recipient: userId }] })
-      .sort({ createdAt: -1 })
-      .populate('sender recipient', 'fullName username')
-      .exec();
-    const latestByUser = new Map<string, Message>();
-    for (const message of messages) {
-      const sender = message.sender as unknown as User;
-      const recipient = message.recipient as unknown as User;
-      const peer = sender._id.toString() === userId ? recipient : sender;
-      if (!latestByUser.has(peer._id.toString()))
-        latestByUser.set(peer._id.toString(), message);
-    }
-    return [...latestByUser.values()];
-  }
+  // async sendMessage(
+  //   senderId: string,
+  //   recipientId: string,
+  //   dto: CreateMessageDto,
+  // ) {
+  //   return this.chatService.sendMessageToUser(
+  //     senderId,
+  //     recipientId,
+  //     dto.content,
+  //   );
+  // }
+
+  // async listMessages(
+  //   userId: string,
+  //   otherUserId: string,
+  //   page = 1,
+  //   limit = 50,
+  // ) {
+  //   this.assertObjectId(userId);
+  //   this.assertObjectId(otherUserId);
+  //   const safePage = Math.max(1, Number(page) || 1);
+  //   const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+  //   const filter = {
+  //     $or: [
+  //       { sender: userId, recipient: otherUserId },
+  //       { sender: otherUserId, recipient: userId },
+  //     ],
+  //   };
+  //   const [messages, total] = await Promise.all([
+  //     this.messageModel
+  //       .find(filter)
+  //       .sort({ createdAt: -1 })
+  //       .skip((safePage - 1) * safeLimit)
+  //       .limit(safeLimit)
+  //       .populate('sender recipient', 'fullName username')
+  //       .exec(),
+  //     this.messageModel.countDocuments(filter).exec(),
+  //   ]);
+  //   return {
+  //     messages: messages.reverse(),
+  //     total,
+  //     page: safePage,
+  //     limit: safeLimit,
+  //   };
+  // }
+
+  // async listConversations(userId: string) {
+  //   this.assertObjectId(userId);
+  //   const messages = await this.messageModel
+  //     .find({ $or: [{ sender: userId }, { recipient: userId }] })
+  //     .sort({ createdAt: -1 })
+  //     .populate('sender recipient', 'fullName username')
+  //     .exec();
+  //   const latestByUser = new Map<string, Message>();
+  //   for (const message of messages) {
+  //     const sender = message.sender as unknown as User;
+  //     const recipient = message.recipient as unknown as User;
+  //     const peer = sender._id.toString() === userId ? recipient : sender;
+  //     if (!latestByUser.has(peer._id.toString()))
+  //       latestByUser.set(peer._id.toString(), message);
+  //   }
+  //   return [...latestByUser.values()];
+  // }
 
   async getPost(postId: string) {
     this.assertObjectId(postId);

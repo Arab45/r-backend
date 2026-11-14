@@ -20,11 +20,14 @@ export class ChatAttachmentService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async uploadFiles(files: ChatUploadedFile[]): Promise<MessageAttachment[]> {
+  async uploadFiles(
+    files: ChatUploadedFile[],
+    folder = 'chat-attachments',
+  ): Promise<MessageAttachment[]> {
     const uploaded: MessageAttachment[] = [];
     try {
       for (const file of files) {
-        uploaded.push(await this.uploadFile(file));
+        uploaded.push(await this.uploadFile(file, folder));
       }
       return uploaded;
     } catch (error) {
@@ -58,7 +61,10 @@ export class ChatAttachmentService {
     }
   }
 
-  private async uploadFile(file: ChatUploadedFile): Promise<MessageAttachment> {
+  private async uploadFile(
+    file: ChatUploadedFile,
+    folder: string,
+  ): Promise<MessageAttachment> {
     const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
@@ -77,7 +83,7 @@ export class ChatAttachmentService {
     const response = await new Promise<UploadApiResponse>((resolve, reject) => {
       const upload = cloudinary.uploader.upload_stream(
         {
-          folder: 'chat-attachments',
+          folder,
           resource_type: 'auto',
           use_filename: true,
           unique_filename: true,
