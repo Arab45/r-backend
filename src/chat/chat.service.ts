@@ -34,7 +34,7 @@ export class ChatService {
 
     const recipient = await this.userModel.exists({ _id: recipientId });
     if (!recipient) throw new NotFoundException('User not found');
-    await this.assertMutualFollow(userId, recipientId);
+    await this.assertFollowRelationship(userId, recipientId);
 
     const [participantOne, participantTwo] = [userId, recipientId].sort();
     const participantKey = `${participantOne}:${participantTwo}`;
@@ -90,7 +90,7 @@ export class ChatService {
     );
     if (!recipientId) throw new NotFoundException('Chat not found');
 
-    await this.assertMutualFollow(userId, recipientId.toString());
+    await this.assertFollowRelationship(userId, recipientId.toString());
     const messageContent = content?.trim() ?? '';
     if (!messageContent && files.length === 0) {
       throw new BadRequestException(
@@ -197,14 +197,16 @@ export class ChatService {
     return chat;
   }
 
-  private async assertMutualFollow(userId: string, recipientId: string) {
-    const [userFollowsRecipient, recipientFollowsUser] = await Promise.all([
-      this.followModel.exists({ follower: userId, following: recipientId }),
-      this.followModel.exists({ follower: recipientId, following: userId }),
-    ]);
-    if (!userFollowsRecipient || !recipientFollowsUser) {
+  private async assertFollowRelationship(userId: string, recipientId: string) {
+    const hasFollowRelationship = await this.followModel.exists({
+      $or: [
+        { follower: userId, following: recipientId },
+        { follower: recipientId, following: userId },
+      ],
+    });
+    if (!hasFollowRelationship) {
       throw new ForbiddenException(
-        'You can only chat with users who follow each other',
+        'You or the other user must follow each other to start a chat',
       );
     }
   }
