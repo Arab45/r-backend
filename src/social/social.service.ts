@@ -283,6 +283,35 @@ export class SocialService {
     return { liked, likeCount: post.likes.length };
   }
 
+  async getPostLikes(postId: string, page = 1, limit = 20) {
+    this.assertObjectId(postId);
+    const post = await this.postModel.findById(postId).select('likes').exec();
+    if (!post) throw new NotFoundException('Post not found');
+
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 20));
+    const total = post.likes.length;
+    const userIds = post.likes.slice(
+      (safePage - 1) * safeLimit,
+      safePage * safeLimit,
+    );
+    const users = await this.userModel
+      .find({ _id: { $in: userIds } })
+      .select('fullName username')
+      .exec();
+    const usersById = new Map(users.map((user) => [user._id.toString(), user]));
+
+    return {
+      postId,
+      likes: userIds
+        .map((userId) => usersById.get(userId.toString()))
+        .filter((user) => user !== undefined),
+      total,
+      page: safePage,
+      limit: safeLimit,
+    };
+  }
+
   async createComment(userId: string, postId: string, dto: CreateCommentDto) {
     this.assertObjectId(userId);
     this.assertObjectId(postId);

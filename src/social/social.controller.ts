@@ -14,7 +14,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ChatUploadedFile } from '../chat/chat-attachment.service';
@@ -40,20 +39,6 @@ export class SocialController {
   constructor(private readonly socialService: SocialService) {}
 
   @Post('/blog')
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['content'],
-      properties: {
-        content: { type: 'string', maxLength: 280 },
-        attachments: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
-  })
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'attachments', maxCount: 5 }], {
       limits: { fileSize: 10 * 1024 * 1024, files: 5 },
@@ -123,6 +108,15 @@ export class SocialController {
     @Param('postId') postId: string,
   ) {
     return this.socialService.setLike(req.user.userId, postId, false);
+  }
+
+  @Get('/blog/:postId/likes')
+  getPostLikes(
+    @Param('postId') postId: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.socialService.getPostLikes(postId, Number(page), Number(limit));
   }
 
   @Get('/blog/:postId/comments')
