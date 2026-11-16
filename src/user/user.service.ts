@@ -247,12 +247,17 @@ export class UsersService {
     }
   }
 
-  async fetchAllUsers(page = 1, limit = 10) {
+  async fetchAllUsers(userId: string, page = 1, limit = 10) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
     const safePage = Math.max(1, Number(page) || 1);
     const safeLimit = Math.min(50, Math.max(1, Number(limit) || 10));
+    const filter = { _id: { $ne: new Types.ObjectId(userId) } };
     const [users, total] = await Promise.all([
       this.userModel
-        .find()
+        .find(filter)
         .select(
           'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
         )
@@ -260,7 +265,7 @@ export class UsersService {
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
         .exec(),
-      this.userModel.countDocuments().exec(),
+      this.userModel.countDocuments(filter).exec(),
     ]);
 
     return {

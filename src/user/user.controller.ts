@@ -43,11 +43,17 @@ export class UsersController {
   }
 
   @Get('/fetch-all')
+  @UseGuards(JwtAuthGuard)
   async getAllUsers(
+    @Req() req: AuthenticatedRequest,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.usersService.fetchAllUsers(Number(page), Number(limit));
+    return this.usersService.fetchAllUsers(
+      req.user.userId,
+      Number(page),
+      Number(limit),
+    );
   }
 
   @Patch('/update-profile')
