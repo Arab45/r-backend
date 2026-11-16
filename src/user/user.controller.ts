@@ -1,10 +1,28 @@
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Request } from 'express';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   AcademicStepDto,
   ResearchStepDto,
   SignupDto,
 } from './dto/create.user.dto';
+import { UpdateProfileDto } from './dto/update.user.dto';
 import { UsersService } from './user.service';
+
+interface AuthenticatedRequest extends Request {
+  user: { userId: string };
+}
 
 @Controller('users')
 export class UsersController {
@@ -30,6 +48,20 @@ export class UsersController {
     @Query('limit') limit?: string,
   ) {
     return this.usersService.fetchAllUsers(Number(page), Number(limit));
+  }
+
+  @Patch('/update-profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const user = await this.usersService.updateProfile(req.user.userId, dto);
+    return {
+      success: true,
+      message: 'Profile updated successfully',
+      user,
+    };
   }
 
   @Put('onboarding/research/:userId')

@@ -12,6 +12,7 @@ import {
   ResearchStepDto,
   AcademicStepDto,
 } from './dto/create.user.dto';
+import { UpdateProfileDto } from './dto/update.user.dto';
 
 @Injectable()
 export class UsersService {
@@ -64,6 +65,57 @@ export class UsersService {
     }
     const user = await this.userModel
       .findById(id)
+      .select(
+        'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+      )
+      .exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
+    const updates: UpdateProfileDto = {};
+    if (dto.fullName !== undefined) updates.fullName = dto.fullName;
+    if (dto.username !== undefined) updates.username = dto.username;
+    if (dto.institution !== undefined) updates.institution = dto.institution;
+    if (dto.fieldOfStudy !== undefined) {
+      updates.fieldOfStudy = dto.fieldOfStudy;
+    }
+    if (dto.bio !== undefined) updates.bio = dto.bio;
+    if (dto.areaOfInterest !== undefined) {
+      updates.areaOfInterest = dto.areaOfInterest;
+    }
+    if (dto.briefResearchFocus !== undefined) {
+      updates.briefResearchFocus = dto.briefResearchFocus;
+    }
+    if (Object.keys(updates).length === 0) {
+      throw new BadRequestException('Provide at least one profile field');
+    }
+
+    if (updates.username !== undefined) {
+      updates.username = updates.username.trim().toLowerCase();
+      if (!updates.username) {
+        throw new BadRequestException('Username cannot be empty');
+      }
+      const existingUser = await this.userModel.exists({
+        username: updates.username,
+        _id: { $ne: userId },
+      });
+      if (existingUser) {
+        throw new BadRequestException('Username already exists');
+      }
+    }
+
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { $set: updates },
+        { new: true, runValidators: true },
+      )
       .select(
         'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
       )

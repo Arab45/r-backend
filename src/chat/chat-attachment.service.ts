@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
-import { Readable } from 'stream';
 import { MessageAttachment } from '../schema/message.schema';
 
 export interface ChatUploadedFile {
@@ -109,7 +108,7 @@ export class ChatAttachmentService {
           resolve(result);
         },
       );
-      Readable.from(file.buffer).pipe(upload);
+      upload.end(file.buffer);
     });
 
     return {
@@ -123,7 +122,25 @@ export class ChatAttachmentService {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : 'unknown error';
+    if (error instanceof Error) return error.message;
+    if (typeof error !== 'object' || error === null) {
+      return typeof error === 'string' ? error : 'unknown error';
+    }
+
+    const details = error as Record<string, unknown>;
+    const message =
+      typeof details.message === 'string'
+        ? details.message
+        : typeof details.error === 'string'
+          ? details.error
+          : undefined;
+    const status =
+      typeof details.http_code === 'number'
+        ? ` (HTTP ${details.http_code})`
+        : '';
+    return message
+      ? `${message}${status}`
+      : 'Cloudinary returned an unknown error';
   }
 
   private isDestroyResult(result: unknown): result is { result: string } {
