@@ -116,7 +116,7 @@ export class UsersController {
     };
   }
 
-  @Put('onboarding/research/:userId')
+  @Patch('onboarding/research/:userId')
   async updateResearch(
     @Param('userId') userId: string,
     @Body() dto: ResearchStepDto,
@@ -132,7 +132,7 @@ export class UsersController {
     };
   }
 
-  @Put('onboarding/academic/:userId')
+  @Patch('onboarding/academic/:userId')
   async updateAcademic(
     @Param('userId') userId: string,
     @Body() dto: AcademicStepDto,
