@@ -5,6 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+import {
+  CloudinaryStorageService,
+  CloudinaryUploadFile,
+} from '../common/cloudinary-storage.service';
 import * as bcrypt from 'bcrypt';
 import { User } from '../schema/user.schema';
 import {
@@ -19,6 +23,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+    private readonly cloudinaryStorage: CloudinaryStorageService,
   ) {}
 
   //SIGNUP
@@ -66,14 +71,18 @@ export class UsersService {
     const user = await this.userModel
       .findById(id)
       .select(
-        'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+        'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
       )
       .exec();
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto) {
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    profilePicture?: CloudinaryUploadFile,
+  ) {
     if (!Types.ObjectId.isValid(userId)) {
       throw new BadRequestException('Invalid user ID');
     }
@@ -92,8 +101,15 @@ export class UsersService {
     if (dto.briefResearchFocus !== undefined) {
       updates.briefResearchFocus = dto.briefResearchFocus;
     }
-    if (Object.keys(updates).length === 0) {
+    const updateFieldCount =
+      Object.keys(updates).length + Number(!!profilePicture);
+    if (updateFieldCount === 0) {
       throw new BadRequestException('Provide at least one profile field');
+    }
+    if (updateFieldCount > 1) {
+      throw new BadRequestException(
+        'Update only one profile field per request',
+      );
     }
 
     if (updates.username !== undefined) {
@@ -110,17 +126,53 @@ export class UsersService {
       }
     }
 
-    const user = await this.userModel
-      .findByIdAndUpdate(
-        userId,
-        { $set: updates },
-        { new: true, runValidators: true },
-      )
-      .select(
-        'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
-      )
+    const currentUser = await this.userModel
+      .findById(userId)
+      .select('+profilePicturePublicId')
       .exec();
-    if (!user) throw new NotFoundException('User not found');
+    if (!currentUser) throw new NotFoundException('User not found');
+
+    const uploadedPicture = profilePicture
+      ? await this.cloudinaryStorage.uploadFile(
+          profilePicture,
+          'profile-pictures',
+        )
+      : undefined;
+    const updateData: Record<string, unknown> = { ...updates };
+    if (uploadedPicture) {
+      updateData.profilePicture = uploadedPicture.url;
+      updateData.profilePicturePublicId = uploadedPicture.publicId;
+    }
+
+    let user: User | null;
+    try {
+      user = await this.userModel
+        .findByIdAndUpdate(
+          userId,
+          { $set: updateData },
+          { new: true, runValidators: true },
+        )
+        .select(
+          'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+        )
+        .exec();
+    } catch (error) {
+      if (uploadedPicture) {
+        await this.cloudinaryStorage.deleteFiles([uploadedPicture]);
+      }
+      throw error;
+    }
+    if (!user) {
+      if (uploadedPicture) {
+        await this.cloudinaryStorage.deleteFiles([uploadedPicture]);
+      }
+      throw new NotFoundException('User not found');
+    }
+    if (uploadedPicture && currentUser.profilePicturePublicId) {
+      await this.cloudinaryStorage.deleteFiles([
+        { publicId: currentUser.profilePicturePublicId, resourceType: 'image' },
+      ]);
+    }
     return user;
   }
 
@@ -240,6 +292,7 @@ export class UsersService {
         name: userData.fullName,
         institution: userData.institution,
         bio: userData.bio,
+        profilePicture: userData.profilePicture,
         areaOfInterest: userData.areaOfInterest,
       };
     } catch {
@@ -259,7 +312,7 @@ export class UsersService {
       this.userModel
         .find(filter)
         .select(
-          'fullName username institution fieldOfStudy bio areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+          'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
         )
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)

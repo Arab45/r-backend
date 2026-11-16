@@ -15,6 +15,12 @@ export class User extends Document {
   @Prop()
   bio?: string;
 
+  @Prop()
+  profilePicture?: string;
+
+  @Prop({ select: false })
+  profilePicturePublicId?: string;
+
   @Prop({ required: true, unique: true })
   email!: string;
 

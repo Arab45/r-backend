@@ -52,7 +52,7 @@ export class ChatService {
         },
         { new: true, upsert: true, setDefaultsOnInsert: true },
       )
-      .populate('participants', 'fullName username')
+      .populate('participants', 'fullName username profilePicture')
       .exec();
     return chat;
   }
@@ -62,12 +62,12 @@ export class ChatService {
     return this.chatModel
       .find({ participants: userId })
       .sort({ updatedAt: -1 })
-      .populate('participants', 'fullName username')
+      .populate('participants', 'fullName username profilePicture')
       .populate({
         path: 'lastMessage',
         populate: [
-          { path: 'sender', select: 'fullName username' },
-          { path: 'recipient', select: 'fullName username' },
+          { path: 'sender', select: 'fullName username profilePicture' },
+          { path: 'recipient', select: 'fullName username profilePicture' },
         ],
       })
       .exec();
@@ -75,7 +75,7 @@ export class ChatService {
 
   async getChatById(userId: string, chatId: string) {
     const chat = await this.findChatForMember(userId, chatId);
-    return chat.populate('participants', 'fullName username');
+    return chat.populate('participants', 'fullName username profilePicture');
   }
 
   async sendChatMessage(
@@ -116,7 +116,10 @@ export class ChatService {
     }
     chat.lastMessage = message._id;
     await chat.save();
-    return message.populate('sender recipient', 'fullName username');
+    return message.populate(
+      'sender recipient',
+      'fullName username profilePicture',
+    );
   }
 
   async getMessages(userId: string, chatId: string, page = 1, limit = 50) {
@@ -141,7 +144,7 @@ export class ChatService {
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('sender recipient', 'fullName username')
+        .populate('sender recipient', 'fullName username profilePicture')
         .exec(),
       this.messageModel.countDocuments(filter).exec(),
     ]);
@@ -184,7 +187,10 @@ export class ChatService {
       content,
       attachments,
     });
-    return message.populate('sender recipient', 'fullName username');
+    return message.populate(
+      'sender recipient',
+      'fullName username profilePicture',
+    );
   }
 
   private async findChatForMember(userId: string, chatId: string) {

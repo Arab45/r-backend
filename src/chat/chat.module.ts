@@ -5,6 +5,7 @@ import { Follow, FollowSchema } from '../schema/follow.schema';
 import { Message, MessageSchema } from '../schema/message.schema';
 import { User, UserSchema } from '../schema/user.schema';
 import { AuthModule } from '../auth/auth.module';
+import { CloudinaryStorageModule } from '../common/cloudinary-storage.module';
 import { ChatController } from './chat.controller';
 import { ChatAttachmentService } from './chat-attachment.service';
 import { ChatGateway } from './chat.gateway';
@@ -13,6 +14,7 @@ import { ChatService } from './chat.service';
 @Module({
   imports: [
     AuthModule,
+    CloudinaryStorageModule,
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
       { name: Follow.name, schema: FollowSchema },

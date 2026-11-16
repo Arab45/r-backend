@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,10 +9,15 @@ import {
   Put,
   Query,
   Req,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { CloudinaryUploadFile } from '../common/cloudinary-storage.service';
 import {
   AcademicStepDto,
   ResearchStepDto,
@@ -58,11 +64,51 @@ export class UsersController {
 
   @Patch('/update-profile')
   @UseGuards(JwtAuthGuard)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string' },
+        username: { type: 'string' },
+        institution: { type: 'string' },
+        fieldOfStudy: { type: 'string' },
+        bio: { type: 'string' },
+        areaOfInterest: { type: 'array', items: { type: 'string' } },
+        briefResearchFocus: { type: 'string' },
+        profilePicture: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('profilePicture', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_request, file, callback) => {
+        if (
+          !['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(
+            file.mimetype,
+          )
+        ) {
+          callback(
+            new BadRequestException('Profile picture must be an image'),
+            false,
+          );
+          return;
+        }
+        callback(null, true);
+      },
+    }),
+  )
   async updateProfile(
     @Req() req: AuthenticatedRequest,
     @Body() dto: UpdateProfileDto,
+    @UploadedFile() profilePicture?: CloudinaryUploadFile,
   ) {
-    const user = await this.usersService.updateProfile(req.user.userId, dto);
+    const user = await this.usersService.updateProfile(
+      req.user.userId,
+      dto,
+      profilePicture,
+    );
     return {
       success: true,
       message: 'Profile updated successfully',
