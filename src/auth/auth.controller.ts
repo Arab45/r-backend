@@ -85,7 +85,7 @@ export class AuthController {
     return res.json(tokens);
   }
 
-  @Post('logout')
+  @Post('/logout')
   async logout(@Req() req: Request, @Res() res: Response) {
     const token =
       req.cookies?.refreshToken || req.headers.authorization?.split(' ')[1];
