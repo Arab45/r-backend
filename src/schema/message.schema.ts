@@ -18,6 +18,9 @@ export class Message extends Document {
   @Prop({ required: true, ref: 'User', type: Types.ObjectId, index: true })
   recipient!: Types.ObjectId;
 
+  @Prop({ ref: 'Chat', type: Types.ObjectId, index: true })
+  chatId?: Types.ObjectId;
+
   @Prop({ required: true, trim: true, maxlength: 5000, default: '' })
   content!: string;
 
@@ -36,7 +39,16 @@ export class Message extends Document {
     default: [],
   })
   attachments!: MessageAttachment[];
+
+  @Prop({ type: Date, default: null })
+  deliveredAt?: Date | null;
+
+  @Prop({ type: Date, default: null })
+  readAt?: Date | null;
+
+  createdAt!: Date;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
 MessageSchema.index({ sender: 1, recipient: 1, createdAt: -1 });
+MessageSchema.index({ recipient: 1, readAt: 1, createdAt: -1 });

@@ -107,6 +107,7 @@ export class ChatService {
       message = await this.createMessage(
         userId,
         recipientId.toString(),
+        chat._id,
         messageContent,
         attachments,
       );
@@ -133,10 +134,8 @@ export class ChatService {
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
     const otherUserId = otherParticipant.toString();
     const filter = {
-      $or: [
-        { sender: userId, recipient: otherUserId },
-        { sender: otherUserId, recipient: userId },
-      ],
+      sender: { $in: [userId, otherUserId] },
+      recipient: { $in: [userId, otherUserId] },
     };
     const [messages, total] = await Promise.all([
       this.messageModel
@@ -156,6 +155,121 @@ export class ChatService {
     };
   }
 
+  async getUnreadMessages(userId: string, page = 1, limit = 50) {
+    this.assertObjectId(userId);
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeLimit = Math.min(100, Math.max(1, Number(limit) || 50));
+    const filter = { recipient: userId, readAt: null };
+    const [messages, total] = await Promise.all([
+      this.messageModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .populate('sender recipient', 'fullName username profilePicture')
+        .exec(),
+      this.messageModel.countDocuments(filter).exec(),
+    ]);
+    return { messages, total, page: safePage, limit: safeLimit };
+  }
+
+  async getUnreadCounts(userId: string) {
+    this.assertObjectId(userId);
+    const counts = await this.messageModel
+      .aggregate<{
+        _id: Types.ObjectId;
+        unreadCount: number;
+      }>([
+        { $match: { recipient: new Types.ObjectId(userId), readAt: null } },
+        { $group: { _id: '$sender', unreadCount: { $sum: 1 } } },
+        { $sort: { unreadCount: -1 } },
+      ])
+      .exec();
+    const total = counts.reduce((sum, item) => sum + item.unreadCount, 0);
+    const senders = await this.userModel
+      .find({ _id: { $in: counts.map((item) => item._id) } })
+      .select('fullName username profilePicture')
+      .exec();
+    const sendersById = new Map(
+      senders.map((sender) => [sender._id.toString(), sender]),
+    );
+    return {
+      total,
+      chats: counts.map((item) => ({
+        user: sendersById.get(item._id.toString()),
+        unreadCount: item.unreadCount,
+      })),
+    };
+  }
+
+  async markChatRead(userId: string, chatId: string) {
+    const chat = await this.findChatForMember(userId, chatId);
+    const senderId = chat.participants.find(
+      (participant) => participant.toString() !== userId,
+    );
+    if (!senderId) throw new NotFoundException('Chat not found');
+
+    const filter = {
+      sender: senderId,
+      recipient: userId,
+      readAt: null,
+    };
+    const messages = await this.messageModel.find(filter).select('_id').exec();
+    if (messages.length === 0) {
+      return {
+        chatId,
+        senderId: senderId.toString(),
+        messageIds: [],
+        readAt: null,
+      };
+    }
+
+    const readAt = new Date();
+    await this.messageModel
+      .updateMany(filter, { $set: { readAt, deliveredAt: readAt } })
+      .exec();
+    return {
+      chatId,
+      senderId: senderId.toString(),
+      messageIds: messages.map((message) => message._id.toString()),
+      readAt,
+    };
+  }
+
+  async markMessageDelivered(
+    userId: string,
+    chatId: string,
+    messageId: string,
+  ) {
+    const chat = await this.findChatForMember(userId, chatId);
+    this.assertObjectId(messageId);
+    const otherParticipant = chat.participants.find(
+      (participant) => participant.toString() !== userId,
+    );
+    if (!otherParticipant) throw new NotFoundException('Chat not found');
+    const filter = {
+      _id: messageId,
+      sender: otherParticipant,
+      recipient: userId,
+    };
+    const message = await this.messageModel
+      .findOneAndUpdate(
+        { ...filter, deliveredAt: null },
+        { $set: { deliveredAt: new Date() } },
+        { new: true },
+      )
+      .exec();
+    const deliveredMessage =
+      message ?? (await this.messageModel.findOne(filter).exec());
+    if (!deliveredMessage) throw new NotFoundException('Message not found');
+    return {
+      messageId: deliveredMessage._id.toString(),
+      chatId,
+      senderId: deliveredMessage.sender.toString(),
+      deliveredAt: deliveredMessage.deliveredAt,
+    };
+  }
+
   async sendMessageToUser(
     senderId: string,
     recipientId: string,
@@ -172,6 +286,7 @@ export class ChatService {
   private async createMessage(
     senderId: string,
     recipientId: string,
+    chatId: Types.ObjectId,
     content: string,
     attachments: MessageAttachment[] = [],
   ) {
@@ -184,6 +299,7 @@ export class ChatService {
     const message = await this.messageModel.create({
       sender: senderId,
       recipient: recipientId,
+      chatId,
       content,
       attachments,
     });

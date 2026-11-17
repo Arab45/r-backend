@@ -23,6 +23,15 @@ interface SendMessagePayload {
   content: string;
 }
 
+interface DeliveredPayload {
+  chatId: string;
+  messageId: string;
+}
+
+interface ReadPayload {
+  chatId: string;
+}
+
 interface PresencePayload {
   userIds: string[];
 }
@@ -76,6 +85,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit('chat:ready', { userId });
       if (becameOnline) this.server.emit('presence:online', { userId });
+      client.emit(
+        'chat:unread:count',
+        await this.chatService.getUnreadCounts(userId),
+      );
     } catch {
       client.disconnect(true);
     }
@@ -107,17 +120,92 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         payload?.recipientId,
         payload?.content,
       );
-      const data = message.toJSON();
+      const data = {
+        _id: message._id.toString(),
+        chatId: message.chatId?.toString(),
+        sender: message.sender,
+        recipient: message.recipient,
+        content: message.content,
+        attachments: message.attachments,
+        deliveredAt: message.deliveredAt,
+        readAt: message.readAt,
+        createdAt: message.createdAt,
+      };
       this.server
         .to(userRoom(senderId))
         .to(userRoom(payload.recipientId))
         .emit('chat:message', data);
-      client.emit('chat:sent', { messageId: message._id });
+      client.emit('chat:sent', {
+        messageId: message._id.toString(),
+        chatId: message.chatId?.toString(),
+        status: 'sent',
+        createdAt: message.createdAt,
+      });
+      this.server
+        .to(userRoom(payload.recipientId))
+        .emit(
+          'chat:unread:count',
+          await this.chatService.getUnreadCounts(payload.recipientId),
+        );
     } catch (error) {
       client.emit('chat:error', {
         event: 'chat:send',
         message:
           error instanceof Error ? error.message : 'Unable to send message',
+      });
+    }
+  }
+
+  @SubscribeMessage('chat:delivered')
+  async acknowledgeDelivery(
+    @ConnectedSocket() client: ChatSocket,
+    @MessageBody() payload: DeliveredPayload,
+  ) {
+    const userId = client.data.userId;
+    if (!userId || !payload?.chatId || !payload?.messageId) return;
+
+    try {
+      const delivery = await this.chatService.markMessageDelivered(
+        userId,
+        payload.chatId,
+        payload.messageId,
+      );
+      this.server.to(userRoom(delivery.senderId)).emit('chat:message:status', {
+        chatId: delivery.chatId,
+        messageId: delivery.messageId,
+        status: 'delivered',
+        deliveredAt: delivery.deliveredAt,
+      });
+      client.emit('chat:delivered:ack', {
+        chatId: delivery.chatId,
+        messageId: delivery.messageId,
+      });
+    } catch (error) {
+      client.emit('chat:error', {
+        event: 'chat:delivered',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unable to acknowledge delivery',
+      });
+    }
+  }
+
+  @SubscribeMessage('chat:read')
+  async acknowledgeRead(
+    @ConnectedSocket() client: ChatSocket,
+    @MessageBody() payload: ReadPayload,
+  ) {
+    const userId = client.data.userId;
+    if (!userId || !payload?.chatId) return;
+    try {
+      const result = await this.markChatReadForUser(userId, payload.chatId);
+      client.emit('chat:read:ack', result);
+    } catch (error) {
+      client.emit('chat:error', {
+        event: 'chat:read',
+        message:
+          error instanceof Error ? error.message : 'Unable to mark chat read',
       });
     }
   }
@@ -150,6 +238,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userIds.map((userId) => [userId, this.connectionsByUser.has(userId)]),
     );
     client.emit('presence:status', statuses);
+  }
+
+  async markChatReadForUser(userId: string, chatId: string) {
+    const result = await this.chatService.markChatRead(userId, chatId);
+    if (result.messageIds.length > 0) {
+      this.server.to(userRoom(result.senderId)).emit('chat:message:read', {
+        chatId: result.chatId,
+        messageIds: result.messageIds,
+        readAt: result.readAt,
+      });
+    }
+    const unreadCounts = await this.chatService.getUnreadCounts(userId);
+    this.server.to(userRoom(userId)).emit('chat:unread:count', unreadCounts);
+    return { ...result, unreadCounts };
   }
 
   private broadcastTyping(

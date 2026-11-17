@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -17,6 +18,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ChatUploadedFile } from './chat-attachment.service';
+import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 import { CreateChatDto, SendChatMessageDto } from './dto/chat.dto';
 
@@ -45,11 +47,32 @@ const allowedAttachmentTypes = new Set([
 @UseGuards(JwtAuthGuard)
 @Controller('chats')
 export class ChatController {
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly chatGateway: ChatGateway,
+  ) {}
 
   @Post()
   createChat(@Req() req: AuthenticatedRequest, @Body() dto: CreateChatDto) {
     return this.chatService.createChat(req.user.userId, dto.recipientId);
+  }
+
+  @Get('unread')
+  getUnreadMessages(
+    @Req() req: AuthenticatedRequest,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.chatService.getUnreadMessages(
+      req.user.userId,
+      Number(page),
+      Number(limit),
+    );
+  }
+
+  @Get('unread-count')
+  getUnreadCounts(@Req() req: AuthenticatedRequest) {
+    return this.chatService.getUnreadCounts(req.user.userId);
   }
 
   @Get(':userId')
@@ -66,6 +89,14 @@ export class ChatController {
     @Param('chatId') chatId: string,
   ) {
     return this.chatService.getChatById(req.user.userId, chatId);
+  }
+
+  @Patch(':chatId/read')
+  markChatRead(
+    @Req() req: AuthenticatedRequest,
+    @Param('chatId') chatId: string,
+  ) {
+    return this.chatGateway.markChatReadForUser(req.user.userId, chatId);
   }
 
   @Post(':chatId/messages')
