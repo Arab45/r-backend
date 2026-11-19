@@ -115,7 +115,7 @@ export class ChatController {
   })
   @UseInterceptors(
     FileFieldsInterceptor([{ name: 'attachments', maxCount: 5 }], {
-      limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+      limits: { fileSize: 5 * 1024 * 1024, files: 5 },
       fileFilter: (_request, file, callback) => {
         if (!allowedAttachmentTypes.has(file.mimetype)) {
           callback(
