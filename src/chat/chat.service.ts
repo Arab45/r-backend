@@ -52,7 +52,7 @@ export class ChatService {
         },
         { new: true, upsert: true, setDefaultsOnInsert: true },
       )
-      .populate('participants', 'fullName username profilePicture')
+      .populate('participants', 'fullName username profilePicture role')
       .exec();
     return chat;
   }
@@ -62,12 +62,18 @@ export class ChatService {
     return this.chatModel
       .find({ participants: userId })
       .sort({ updatedAt: -1 })
-      .populate('participants', 'fullName username profilePicture')
+      .populate('participants', 'fullName username profilePicture role')
       .populate({
         path: 'lastMessage',
         populate: [
-          { path: 'sender', select: 'fullName username profilePicture' },
-          { path: 'recipient', select: 'fullName username profilePicture' },
+          {
+            path: 'sender',
+            select: 'fullName username profilePicture role',
+          },
+          {
+            path: 'recipient',
+            select: 'fullName username profilePicture role',
+          },
         ],
       })
       .exec();
@@ -75,7 +81,10 @@ export class ChatService {
 
   async getChatById(userId: string, chatId: string) {
     const chat = await this.findChatForMember(userId, chatId);
-    return chat.populate('participants', 'fullName username profilePicture');
+    return chat.populate(
+      'participants',
+      'fullName username profilePicture role',
+    );
   }
 
   async sendChatMessage(
@@ -119,7 +128,7 @@ export class ChatService {
     await chat.save();
     return message.populate(
       'sender recipient',
-      'fullName username profilePicture',
+      'fullName username profilePicture role',
     );
   }
 
@@ -143,7 +152,7 @@ export class ChatService {
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('sender recipient', 'fullName username profilePicture')
+        .populate('sender recipient', 'fullName username profilePicture role')
         .exec(),
       this.messageModel.countDocuments(filter).exec(),
     ]);
@@ -166,7 +175,7 @@ export class ChatService {
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('sender recipient', 'fullName username profilePicture')
+        .populate('sender recipient', 'fullName username profilePicture role')
         .exec(),
       this.messageModel.countDocuments(filter).exec(),
     ]);
@@ -188,7 +197,7 @@ export class ChatService {
     const total = counts.reduce((sum, item) => sum + item.unreadCount, 0);
     const senders = await this.userModel
       .find({ _id: { $in: counts.map((item) => item._id) } })
-      .select('fullName username profilePicture')
+      .select('fullName username profilePicture role')
       .exec();
     const sendersById = new Map(
       senders.map((sender) => [sender._id.toString(), sender]),
@@ -305,7 +314,7 @@ export class ChatService {
     });
     return message.populate(
       'sender recipient',
-      'fullName username profilePicture',
+      'fullName username profilePicture role',
     );
   }
 

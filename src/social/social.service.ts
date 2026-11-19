@@ -71,7 +71,7 @@ export class SocialService {
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('author', 'fullName username')
+        .populate('author', 'fullName username role profilePicture')
         .exec(),
       this.postModel.countDocuments(filter).exec(),
     ]);
@@ -91,12 +91,14 @@ export class SocialService {
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('author', 'fullName username')
+        .populate('author', 'fullName username role profilePicture')
         .exec(),
       this.postModel.countDocuments({ content: expression }).exec(),
       this.userModel
         .find({ $or: [{ fullName: expression }, { username: expression }] })
-        .select('fullName username institution fieldOfStudy bio areaOfInterest')
+        .select(
+          'fullName username role profilePicture institution fieldOfStudy bio areaOfInterest',
+        )
         .sort({ fullName: 1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
@@ -153,7 +155,10 @@ export class SocialService {
     const relationField = direction === 'followers' ? 'following' : 'follower';
     const relations = await this.followModel
       .find({ [field]: userId })
-      .populate(relationField, 'fullName username institution fieldOfStudy bio')
+      .populate(
+        relationField,
+        'fullName username role profilePicture institution fieldOfStudy bio',
+      )
       .sort({ createdAt: -1 })
       .exec();
     return relations.map((relation) => relation.get(relationField));
@@ -170,7 +175,7 @@ export class SocialService {
         .limit(safeLimit)
         .populate(
           'follower following',
-          'fullName username institution fieldOfStudy bio',
+          'fullName username role profilePicture institution fieldOfStudy bio',
         )
         .exec(),
       this.followModel.countDocuments().exec(),
@@ -297,7 +302,7 @@ export class SocialService {
     );
     const users = await this.userModel
       .find({ _id: { $in: userIds } })
-      .select('fullName username')
+      .select('fullName username role profilePicture')
       .exec();
     const usersById = new Map(users.map((user) => [user._id.toString(), user]));
 
@@ -326,7 +331,7 @@ export class SocialService {
     await this.postModel
       .updateOne({ _id: postId }, { $inc: { commentCount: 1 } })
       .exec();
-    return comment.populate('author', 'fullName username');
+    return comment.populate('author', 'fullName username role profilePicture');
   }
 
   async listComments(postId: string, page = 1, limit = 20) {
@@ -341,7 +346,7 @@ export class SocialService {
         .sort({ createdAt: 1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
-        .populate('author', 'fullName username')
+        .populate('author', 'fullName username role profilePicture')
         .exec(),
       this.commentModel.countDocuments({ post: postId }).exec(),
     ]);

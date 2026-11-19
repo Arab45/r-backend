@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   Post,
-  Put,
   Query,
   Req,
   UploadedFile,
@@ -43,6 +42,7 @@ export class UsersController {
       message: 'User created successfully',
       data: {
         userId: user._id,
+        role: user.role,
         onboardingStep: user.onboardingStep,
       },
     };

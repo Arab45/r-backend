@@ -28,7 +28,7 @@ export class UsersService {
 
   //SIGNUP
   async signup(signupDto: SignupDto): Promise<User> {
-    const { email, password, fullName, username } = signupDto;
+    const { email, password, fullName, username, role } = signupDto;
 
     const existingUser = await this.userModel.findOne({ email });
     if (existingUser) {
@@ -47,6 +47,7 @@ export class UsersService {
     const user = await this.userModel.create({
       email: email.toLocaleLowerCase(),
       fullName,
+      role,
       username: username?.toLowerCase(),
       password: hashedPassword,
       onboardingStep: 1,
@@ -71,7 +72,7 @@ export class UsersService {
     const user = await this.userModel
       .findById(id)
       .select(
-        'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+        'fullName username role institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
       )
       .exec();
     if (!user) throw new NotFoundException('User not found');
@@ -153,7 +154,7 @@ export class UsersService {
           { new: true, runValidators: true },
         )
         .select(
-          'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+          'fullName username role institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
         )
         .exec();
     } catch (error) {
@@ -290,6 +291,7 @@ export class UsersService {
       return {
         id: userData._id,
         name: userData.fullName,
+        role: userData.role,
         institution: userData.institution,
         bio: userData.bio,
         profilePicture: userData.profilePicture,
@@ -312,7 +314,7 @@ export class UsersService {
       this.userModel
         .find(filter)
         .select(
-          'fullName username institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
+          'fullName username role institution fieldOfStudy bio profilePicture areaOfInterest briefResearchFocus onboardingCompleted createdAt',
         )
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
