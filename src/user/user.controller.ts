@@ -144,6 +144,7 @@ export class UsersController {
       message: 'Onboarding completed',
       data: {
         onboardingCompleted: user.onboardingCompleted,
+        onboardingStep: user.onboardingStep,
       },
     };
   }

@@ -17,6 +17,7 @@ import {
   AcademicStepDto,
 } from './dto/create.user.dto';
 import { UpdateProfileDto } from './dto/update.user.dto';
+import { UserRole } from './user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -184,6 +185,12 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    if (user.role !== UserRole.RESEARCHER) {
+      throw new BadRequestException(
+        'The research onboarding step is only for researchers',
+      );
+    }
+
     if (user.onboardingStep !== 1) {
       throw new BadRequestException('Invalid onboarding step');
     }
@@ -205,7 +212,8 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    if (user.onboardingStep !== 2) {
+    const expectedStep = user.role === UserRole.STUDENT ? 1 : 2;
+    if (user.onboardingStep !== expectedStep) {
       throw new BadRequestException('Complete previous step first');
     }
 
@@ -213,7 +221,7 @@ export class UsersService {
     user.institution = dto.institution;
     user.bio = dto.bio;
 
-    user.onboardingStep = 3;
+    user.onboardingStep = expectedStep + 1;
     user.onboardingCompleted = true;
 
     await user.save();
